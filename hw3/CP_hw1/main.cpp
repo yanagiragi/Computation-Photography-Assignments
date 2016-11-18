@@ -1,8 +1,8 @@
 #include <GL/glew.h>
 #include <GL/GL.h>
-#include <FL/Fl.H>
+//#include <FL/Fl.H>
 //#include <FL/gl.h>
-#include <FL/Fl_Gl_Window.H>
+//#include <FL/Fl_Gl_Window.H>
 #include <stdio.h>
 #include <windows.h>  // for MS Windows
 #include <math.h>
@@ -14,17 +14,13 @@
 
 using namespace glm;
 
-typedef struct {
-	float x,y,z;
-}Vector3;
-
 typedef struct cell{
 	char* name; // for debug
 	float height, width;
-	Vector3 base, joint;
+	vec3 base, joint;
 	struct cell* parent;
 	float dof; // value storing degree of freedom
-	float nowAngle; // nowAngle = mid(nowAngle,parent->base.angle)
+	float nowAngle;
 	float angleOffset;
 }node;
 
@@ -35,7 +31,7 @@ bool keyboardState[256],isReverse = false;
 char title[] = "3D Shapes";
 float torseRotationAngle = 0.0;
 float incre_x,incre_y,incre_z;
-Vector3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
+Vec3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
 const float radian = 0.0174532925;
 GLfloat g_vertex_buffer_data[] = {
 	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
@@ -294,7 +290,7 @@ void initGL() {
 	
 	glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity(); 
-	gluPerspective( 60, 0.4, 1.0, 500.0);   //³zµø§ë¼v 
+	gluPerspective( 60, 0.4, 1.0, 500.0);   //Â³zÂµÃ¸Â§Ã«Â¼v 
 	glMatrixMode(GL_MODELVIEW);				// To operate on model-view matrix
 	glLoadIdentity();
 
