@@ -1,5 +1,11 @@
 #include <GL/glew.h>
 #include <GL/GL.h>
+<<<<<<< HEAD
+=======
+//#include <FL/Fl.H>
+//#include <FL/gl.h>
+//#include <FL/Fl_Gl_Window.H>
+>>>>>>> origin/master
 #include <stdio.h>
 #include <windows.h>  // for MS Windows
 #include <math.h>
@@ -12,10 +18,18 @@ using namespace glm;
 typedef struct cell{
 	char* name; // for debug
 	float height, width;
+<<<<<<< HEAD
 	vec3 base;
 	struct cell* parent;
 	float dof; // value storing degree of freedom
 	float nowAngle; // nowAngle = mid(nowAngle,parent->base.angle)
+=======
+	vec3 base, joint;
+	struct cell* parent;
+	float dof; // value storing degree of freedom
+	float nowAngle;
+	float angleOffset;
+>>>>>>> origin/master
 }node;
 
 /* Global Variables */
@@ -24,7 +38,12 @@ node drawcell[10];
 bool keyboardState[256],isReverse = false; 
 char title[] = "CP_HW3";
 float torseRotationAngle = 0.0;
+<<<<<<< HEAD
 vec3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
+=======
+float incre_x,incre_y,incre_z;
+Vec3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
+>>>>>>> origin/master
 const float radian = 0.0174532925;
 GLfloat g_vertex_buffer_data[] = {
 	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
@@ -280,7 +299,7 @@ void initGL()
 	
 	glMatrixMode(GL_PROJECTION); 
 	glLoadIdentity(); 
-	gluPerspective( 60, 0.4, 1.0, 500.0);   //³zµø§ë¼v 
+	gluPerspective( 60, 0.4, 1.0, 500.0);   //Â³zÂµÃ¸Â§Ã«Â¼v 
 	glMatrixMode(GL_MODELVIEW);				// To operate on model-view matrix
 	glLoadIdentity();
 
