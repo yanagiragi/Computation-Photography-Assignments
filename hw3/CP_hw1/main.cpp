@@ -1,41 +1,30 @@
 #include <GL/glew.h>
 #include <GL/GL.h>
-#include <FL/Fl.H>
-//#include <FL/gl.h>
-#include <FL/Fl_Gl_Window.H>
 #include <stdio.h>
 #include <windows.h>  // for MS Windows
 #include <math.h>
-
 #include <glm/glm.hpp>
-#include "glut.h"
+#include <GL/freeglut.h>
 #include "SMFLoader.h"
-//#include "duck.cpp"
 
 using namespace glm;
-
-typedef struct {
-	float x,y,z;
-}Vector3;
 
 typedef struct cell{
 	char* name; // for debug
 	float height, width;
-	Vector3 base, joint;
+	vec3 base;
 	struct cell* parent;
 	float dof; // value storing degree of freedom
 	float nowAngle; // nowAngle = mid(nowAngle,parent->base.angle)
-	float angleOffset;
 }node;
 
 /* Global Variables */
 SMFLoader smf;
 node drawcell[10];
 bool keyboardState[256],isReverse = false; 
-char title[] = "3D Shapes";
+char title[] = "CP_HW3";
 float torseRotationAngle = 0.0;
-float incre_x,incre_y,incre_z;
-Vector3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
+vec3 cameraOffset, preFirstCameraOffset, preThirdCameraOffset; // camera position offset 
 const float radian = 0.0174532925;
 GLfloat g_vertex_buffer_data[] = {
 	-1.0f,-1.0f,-1.0f, // triangle 1 : begin
@@ -78,17 +67,24 @@ GLfloat g_vertex_buffer_data[] = {
 
 
 /* Function prototypes*/
+// Mathmatics
 float clamp(float v, float min, float max);
+vec3 getNormal(GLfloat* vertex);
+// GLs
+void initGL();
+void display();
+void reshape(GLsizei width, GLsizei height);
+void drawSolidCube();
+// Robot and smf
 void InitNode ();
 void robotMovement(float x, float y, float z);
 void rotateVertex (int index, float increment);
 void drawsmf();
-void initGL();
-void display();
-void reshape(GLsizei width, GLsizei height);
-void postDealKey();
-void drawSolidCube();
+void drawRobot();
 void drawMirror();
+void drawMirrorRobotAndSmf();
+// Keyboard events
+void postDealKey();
 void keyboard(unsigned char key, int x, int y);
 void keyboardUp(unsigned char key, int x, int y);
 
@@ -96,28 +92,30 @@ float clamp(float v, float min, float max)
 {
 	return (v > max) ? max : ((v < min) ? min : v);
 }
+
 void robotMovement(float x, float y, float z)
 {	
-	incre_x = x * cosf(torseRotationAngle * radian) + z * sinf(torseRotationAngle * radian);
-	incre_y = y;
-	incre_z = -1.0 * x * sinf(torseRotationAngle * radian) + z * cosf(torseRotationAngle * radian);
+	float incre_x = x * cosf(torseRotationAngle * radian) + z * sinf(torseRotationAngle * radian);
+	float incre_y = y;
+	float incre_z = -1.0 * x * sinf(torseRotationAngle * radian) + z * cosf(torseRotationAngle * radian);
 	
 	for(int i = 0; i < 7; ++i){		
 		if((drawcell[0].base.x - incre_x) < 1.8 && (drawcell[0].base.x - incre_x) > -1.8) 
 			drawcell[i].base.x -= incre_x;
 		if((drawcell[0].base.z - incre_z) < 0.91 && (drawcell[0].base.z - incre_z) > -2) 		
 			drawcell[i].base.z -= incre_z;
-	}
-	
+	}	
 }
+
 void rotateVertex (int index, float increment)
 {	
 	float value = clamp(drawcell[index].nowAngle + increment, -1 * drawcell[index].dof, drawcell[index].dof);
 	drawcell[index].nowAngle = value;
 }
+
 void InitNode () // Initialize Nodes we wish to draw
 {	
-	/* Assign Names */
+	/* Assign Names For Debug */
 	drawcell[0].name = "Torse";
 	drawcell[2].name = "Neck";
 	drawcell[1].name = "Head";
@@ -140,7 +138,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	/* Assign data */
 	drawcell[0].base.x = 0;
 	drawcell[0].base.y = 0;
-	drawcell[0].joint = drawcell[0].base;
 	drawcell[0].height = 0.1;
 	drawcell[0].width = 0.1;
 	drawcell[0].nowAngle = 0;
@@ -149,8 +146,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	// Head
 	drawcell[1].base.x = 0;
 	drawcell[1].base.y = 0.2;
-	drawcell[1].joint.x = -0.075;
-	drawcell[1].joint.y = 0;
 	drawcell[1].height = 0.05;
 	drawcell[1].width = 0.15;
 	drawcell[1].nowAngle = 0;
@@ -158,8 +153,6 @@ void InitNode () // Initialize Nodes we wish to draw
 
 	drawcell[2].base.x = 0;
 	drawcell[2].base.y = 0.1;
-	drawcell[2].joint.x = 0;
-	drawcell[2].joint.y = 0.08;
 	drawcell[2].height = 0.1;
 	drawcell[2].width = 0.05;
 	drawcell[2].nowAngle = 0;
@@ -168,8 +161,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	// Left hand
 	drawcell[3].base.x = -0.15;
 	drawcell[3].base.y = 0.05;
-	drawcell[3].joint.x = 0;
-	drawcell[3].joint.y = 0;	
 	drawcell[3].height = 0.025;
 	drawcell[3].width = 0.1;
 	drawcell[3].nowAngle = 0;
@@ -178,8 +169,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	// Right hand
 	drawcell[4].base.x = 0.15;
 	drawcell[4].base.y = 0.05;
-	drawcell[4].joint.x = 0;
-	drawcell[4].joint.y = 0;
 	drawcell[4].height = 0.025;
 	drawcell[4].width = 0.1;
 	drawcell[4].nowAngle = 0;
@@ -188,8 +177,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	// left leg
 	drawcell[5].base.x = -0.08;
 	drawcell[5].base.y = -0.15;
-	drawcell[5].joint.x = 0;
-	drawcell[5].joint.y = 0;
 	drawcell[5].height = 0.1;
 	drawcell[5].width = 0.03;
 	drawcell[5].nowAngle = 0;
@@ -198,8 +185,6 @@ void InitNode () // Initialize Nodes we wish to draw
 	// right leg
 	drawcell[6].base.x = 0.08;
 	drawcell[6].base.y = -0.15;
-	drawcell[6].joint.x = 0;
-	drawcell[6].joint.y = 0;
 	drawcell[6].height = 0.1;
 	drawcell[6].width = 0.03;
 	drawcell[6].nowAngle = 0;
@@ -211,7 +196,7 @@ void InitNode () // Initialize Nodes we wish to draw
 	}
 
 	for(int i = 0; i < 256; ++i)
-		keyboardState[i] = false;
+		keyboardState[i] = false; // reset keyboard state
 
 	cameraOffset.x = preThirdCameraOffset.x = 0;
 	cameraOffset.y = preThirdCameraOffset.y = 1;
@@ -237,8 +222,8 @@ vec3 getNormal(GLfloat* vertex)
 	return normalize(n);
 }
 
-
-void drawsmf(){	
+void drawsmf()
+{	
 	float* vertex = NULL;
 	glPushMatrix();	
 		glTranslatef(
@@ -268,7 +253,8 @@ void drawsmf(){
 }
 
 /* Initialize OpenGL Graphics */
-void initGL() {
+void initGL()
+{
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);// Set background color to black and opaque
 	glClearDepth(1.0f);                  // Set background depth to farthest
 	glEnable(GL_DEPTH_TEST);				// Enable depth testing for z-culling
@@ -301,7 +287,8 @@ void initGL() {
 	InitNode();
 }
 
-void drawRobot(){		
+void drawRobot()
+{		
 	glTranslatef(drawcell[0].base.x , drawcell[0].base.y, drawcell[0].base.z);
 	glRotatef(torseRotationAngle,0,1,0);
 	
@@ -342,7 +329,8 @@ void drawRobot(){
 	}
 }
 
-void drawSolidCube(){	
+void drawSolidCube()
+{	
 	for(int i = 0; i < 12; ++i){
 		vec3 nor = getNormal(&(g_vertex_buffer_data[i+9]));
 		glBegin(GL_TRIANGLES);		
@@ -354,7 +342,9 @@ void drawSolidCube(){
 	}
 	return ;
 }
-void drawMirrorRobotAndSmf(){
+
+void drawMirrorRobotAndSmf()
+{
 	glPushMatrix();		
 		float incre = drawcell[0].base.z + 2.3;
 		for(int i = 0; i < 7; ++i)
@@ -610,24 +600,24 @@ void keyboardUp(unsigned char key, int x, int y)
 
 /* Main function: GLUT runs as a console application starting at main() */
 int main(int argc, char** argv) {
-	glutInit(&argc, argv);				// Initialize GLUT
+	glutInit(&argc, argv);								// Initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE);	// Enable double buffered mode
-	glutInitWindowSize(640, 480);		// Set the window's initial width & height
-	glutInitWindowPosition(50, 50);		// Position the window's initial top-left corner
-	glutCreateWindow(title);			// Create window with the given title
-	glutDisplayFunc(display);			// Register callback handler for window re-paint event
-	glutReshapeFunc(reshape);			// Register callback handler for window re-size event
-	glutKeyboardFunc(keyboard);			// Reigister callback handler for keyboard event
+	glutInitWindowSize(640, 480);				// Set the window's initial width & height
+	glutInitWindowPosition(50, 50);			// Position the window's initial top-left corner
+	glutCreateWindow(title);						// Create window with the given title
+	glutDisplayFunc(display);							// Register callback handler for window re-paint event
+	glutReshapeFunc(reshape);					// Register callback handler for window re-size event
+	glutKeyboardFunc(keyboard);				// Reigister callback handler for keyboard event
 	glutKeyboardUpFunc(keyboardUp);		// Reigister callback handler for keyboardUp event
 
-	glewExperimental=true; // Needed in core profile
+	glewExperimental=true;							 // Needed in core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
 		return -1;
 	}
 
-	initGL();							// Our own OpenGL initialization
+	initGL();														// Our own OpenGL initialization
 	
-	glutMainLoop();						// Enter the infinite event-processing loop
+	glutMainLoop();										// Enter the infinite event-processing loop
 	return 0;
 }
