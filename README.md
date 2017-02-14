@@ -13,3 +13,10 @@ Assignments Repo for Computation Photography: Applied Graphics and Imaging (4105
 ### Demo of hw3
 ![](https://github.com/yanagiragi/Computational-Photography-Assignments/blob/master/Demo/3.gif)
 <br />
+### Demo of hw4 - Image Quiltering
+![](https://github.com/yanagiragi/Computational-Photography-Assignments/blob/master/Demo/4-1.jpg)
+![](https://github.com/yanagiragi/Computational-Photography-Assignments/blob/master/Demo/4-2.jpg)
+<br />
+### Demo of hw5 - Simple AR (Not Uploaded)
+![](https://github.com/yanagiragi/Computational-Photography-Assignments/blob/master/Demo/5.gif)
+<br />
